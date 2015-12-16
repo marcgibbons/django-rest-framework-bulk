@@ -1,4 +1,5 @@
 from __future__ import print_function, unicode_literals
+import uuid
 import inspect
 
 from rest_framework.exceptions import ValidationError
@@ -61,6 +62,14 @@ class BulkListSerializer(ListSerializer):
 
         for obj in objects_to_update:
             obj_id = getattr(obj, id_attr)
+
+            # Cast UUID types to string
+            # The pk keys in validated data will be strings, while
+            # if using a UUIDField, the objects_to_update pk will be UUIDs.
+            # e.g. {'xyz': {}}.get(UUID('xyz')) == None
+            if isinstance(obj_id, uuid.UUID):
+                obj_id = str(obj_id)
+
             obj_validated_data = all_validated_data_by_id.get(obj_id)
 
             # use model serializer to actually update the model
