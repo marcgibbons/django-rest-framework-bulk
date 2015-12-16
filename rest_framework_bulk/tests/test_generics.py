@@ -6,8 +6,9 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from rest_framework import status
 
-from .simple_app.models import SimpleModel
-from .simple_app.views import FilteredBulkAPIView, SimpleBulkAPIView
+from .simple_app.models import SimpleModel, SimpleUUIDPKModel
+from .simple_app.views import FilteredBulkAPIView, SimpleBulkAPIView, \
+    SimpleUUIDAPIView
 
 
 class TestBulkAPIView(TestCase):
@@ -99,6 +100,42 @@ class TestBulkAPIView(TestCase):
         ))
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_put_with_uuid_pk_model(self):
+        """
+        Test that PUT requests work on models with UUID primary keys.
+        """
+        obj1 = SimpleUUIDPKModel.objects.create(
+            contents='hello world',
+            number=1
+        )
+        obj2 = SimpleUUIDPKModel.objects.create(
+            contents='hello mars',
+            number=2
+        )
+
+        view = SimpleUUIDAPIView.as_view()
+        response = view(self.request.put(
+            '',
+            json.dumps([
+                {'contents': 'foo', 'number': 3, 'id': str(obj1.pk)},
+                {'contents': 'bar', 'number': 4, 'id': str(obj2.pk)},
+            ]),
+            content_type='application/json',
+        ))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(SimpleUUIDPKModel.objects.count(), 2)
+        self.assertEqual(
+            list(
+                SimpleUUIDPKModel.objects.all()
+                .values_list('id', 'contents', 'number')
+            ),
+            [
+                (obj1.pk, 'foo', 3),
+                (obj2.pk, 'bar', 4),
+            ]
+        )
 
     def test_patch(self):
         """
