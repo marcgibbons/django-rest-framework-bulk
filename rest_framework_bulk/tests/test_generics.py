@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 import json
+import uuid
 
 from django.core.urlresolvers import reverse
 from django.test import TestCase
@@ -115,12 +116,17 @@ class TestBulkAPIView(TestCase):
         )
 
         view = SimpleUUIDAPIView.as_view()
+        data = [
+            {'contents': 'foo', 'number': 3, 'id': obj1.pk},
+            {'contents': 'bar', 'number': 4, 'id': obj2.pk},
+        ]
+        if isinstance(obj1.pk, uuid.UUID):
+            for item in data:
+                item['id'] = str(item['id'])
+
         response = view(self.request.put(
             '',
-            json.dumps([
-                {'contents': 'foo', 'number': 3, 'id': str(obj1.pk)},
-                {'contents': 'bar', 'number': 4, 'id': str(obj2.pk)},
-            ]),
+            json.dumps(data),
             content_type='application/json',
         ))
 
